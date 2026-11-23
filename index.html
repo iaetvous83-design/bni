@@ -237,7 +237,7 @@
  <div>
  <span class="text-xs uppercase tracking-widest text-amber-400 font-bold">Espace Présentateur</span>
  <h3 class="text-lg font-bold text-white">Demandes d'accès aux Gems reçues en direct</h3>
- <p class="text-xs text-slate-400">Copiez les emails par Gem (séparés par des virgules) pour les coller directement dans la fenêtre « Partager » de Gemini.</p>
+ <p class="text-xs text-slate-400">Copiez les emails et ouvrez directement le Gem pour les partager.</p>
  </div>
  <button type="button" onclick="clearGemRequests()" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-red-900/50 text-slate-300 hover:text-red-300 rounded-lg border border-slate-700 transition-colors cursor-pointer self-start">
  Vider la liste
@@ -254,13 +254,10 @@
  </div>
  <textarea id="gem-emails-ticket" readonly rows="3" placeholder="Aucun email reçu..." class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 font-mono focus:outline-none"></textarea>
  </div>
- <div class="flex flex-col gap-2">
- <button type="button" onclick="copyGemEmails('ticket', this)" class="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition-all cursor-pointer">
- 📋 Copier les emails
+ <div>
+ <button type="button" onclick="copyAndOpenGem('ticket', this)" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition-all cursor-pointer">
+ 📋 Copier & Ouvrir le Gem ↗
  </button>
- <a href="https://gemini.google.com/gem/1CeD83XMwU9oRpK9Ih7UecwQclvqlDCGv?usp=sharing" target="_blank" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-center text-xs font-semibold rounded-lg transition-all">
- Ouvrir le Gem pour partager ↗
- </a>
  </div>
  </div>
 
@@ -273,13 +270,10 @@
  </div>
  <textarea id="gem-emails-devis" readonly rows="3" placeholder="Aucun email reçu..." class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 font-mono focus:outline-none"></textarea>
  </div>
- <div class="flex flex-col gap-2">
- <button type="button" onclick="copyGemEmails('devis', this)" class="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition-all cursor-pointer">
- 📋 Copier les emails
+ <div>
+ <button type="button" onclick="copyAndOpenGem('devis', this)" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition-all cursor-pointer">
+ 📋 Copier & Ouvrir le Gem ↗
  </button>
- <a href="https://gemini.google.com/gem/1RnipBLJOO9wb6M1ZnQFbZulp82I2BO5i?usp=sharing" target="_blank" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-center text-xs font-semibold rounded-lg transition-all">
- Ouvrir le Gem pour partager ↗
- </a>
  </div>
  </div>
 
@@ -292,47 +286,12 @@
  </div>
  <textarea id="gem-emails-email" readonly rows="3" placeholder="Aucun email reçu..." class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 font-mono focus:outline-none"></textarea>
  </div>
- <div class="flex flex-col gap-2">
- <button type="button" onclick="copyGemEmails('email', this)" class="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition-all cursor-pointer">
- 📋 Copier les emails
- </button>
- <a href="https://gemini.google.com/gem/1hfM9ZtXHgFUkSiArw7WohkvRmcWyXO48?usp=sharing" target="_blank" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-center text-xs font-semibold rounded-lg transition-all">
- Ouvrir le Gem pour partager ↗
- </a>
- </div>
- </div>
- </div>
-
- <!-- Script automatisé de collage dans Gemini -->
- <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-2">
- <div class="flex flex-wrap items-center justify-between gap-2">
- <span class="text-xs font-bold text-amber-400">⚡ Script rapide d'ajout en masse (Console navigateur sur la page du Gem)</span>
- <button type="button" onclick="copyConsoleScript(this)" class="text-xs px-3 py-1 bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-amber-400 font-semibold rounded-lg transition-all cursor-pointer">
- Copier le script
+ <div>
+ <button type="button" onclick="copyAndOpenGem('email', this)" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition-all cursor-pointer">
+ 📋 Copier & Ouvrir le Gem ↗
  </button>
  </div>
- <p class="text-[11px] text-slate-400">
- 1. Cliquez sur « Copier les emails » du Gem souhaité. 2. Ouvrez le Gem et cliquez sur « Partager ». 3. Collez directement la liste dans le champ « Ajouter des personnes » (Google accepte les listes séparées par des virgules) et validez.
- </p>
  </div>
- </div>
-
- <!-- BLOC CONTACT & PRISE DE RENDEZ-VOUS (15 MIN) -->
- <div class="bg-gradient-to-r from-amber-500/10 to-slate-900 border border-amber-500/40 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
- <div class="space-y-2 text-center md:text-left">
- <span class="text-xs uppercase tracking-widest text-amber-400 font-bold">Allons plus loin</span>
- <h3 class="text-xl font-bold text-white">Besoin d'un accompagnement sur-mesure ?</h3>
- <p class="text-xs text-slate-300 max-w-md">
- Discutons de votre organisation lors d'un échange de 15 minutes ou contactez-moi directement.
- </p>
- </div>
- <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
- <a href="https://calendar.app.google/gjYZw49g4cKe41vH7" target="_blank" rel="noopener noreferrer" class="px-5 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs text-center transition-all shadow-md">
- 📅 Réserver un créneau de 15 min
- </a>
- <a href="mailto:iaetvous83@gmail.com?subject=Contact%20BNI%20-%20IA%20%26%20Vous" class="px-5 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-xs text-center transition-all border border-slate-700">
- ✉️ Écrivez-nous
- </a>
  </div>
  </div>
 
@@ -556,7 +515,7 @@
  document.getElementById('modal-success-view').classList.remove('hidden');
  }
 
- // --- GESTION ADMIN DES EMAILS & SCRIPT DE PARTAGE ---
+ // --- GESTION ADMIN DES EMAILS & COPIE+OUVERTURE DU GEM ---
  function getUniqueEmailsForGem(gemKey) {
  const entries = (gemRequestsData && gemRequestsData[gemKey]) ? Object.values(gemRequestsData[gemKey]) : [];
  const emails = entries.map(item => (typeof item === 'string' ? item : item.email)).filter(Boolean);
@@ -573,36 +532,29 @@
  });
  }
 
- function copyGemEmails(gemKey, btnEl) {
+ function copyAndOpenGem(gemKey, btnEl) {
  const list = getUniqueEmailsForGem(gemKey);
- if (list.length === 0) {
- alert("Aucun email reçu pour cet assistant pour le moment.");
- return;
+ const textToCopy = list.length > 0 ? list.join(', ') : "";
+ 
+ const performOpen = () => {
+ const gemUrl = gemLinks[gemKey];
+ if (gemUrl) {
+ window.open(gemUrl, '_blank');
  }
- const textToCopy = list.join(', ');
+ };
+
+ if (textToCopy) {
  navigator.clipboard.writeText(textToCopy).then(() => {
  const originalText = btnEl.innerText;
  btnEl.innerText = `✅ ${list.length} email(s) copié(s) !`;
  setTimeout(() => { btnEl.innerText = originalText; }, 2500);
+ performOpen();
+ }).catch(() => {
+ performOpen();
  });
+ } else {
+ performOpen();
  }
-
- function copyConsoleScript(btnEl) {
- const allEmails = [...new Set([
- ...getUniqueEmailsForGem('ticket'),
- ...getUniqueEmailsForGem('devis'),
- ...getUniqueEmailsForGem('email')
- ])];
- const scriptCode = `// Liste des emails collectés (${allEmails.length}) :
-const emails = ${JSON.stringify(allEmails)};
-navigator.clipboard.writeText(emails.join(', '));
-console.log("Emails copiés dans le presse-papiers :", emails.join(', '));`;
-
- navigator.clipboard.writeText(scriptCode).then(() => {
- const originalText = btnEl.innerText;
- btnEl.innerText = "✅ Script copié !";
- setTimeout(() => { btnEl.innerText = originalText; }, 2500);
- });
  }
 
  function clearGemRequests() {
