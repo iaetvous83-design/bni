@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>IA & Vous — Présentation BNI</title>
+ <script src="https://cdn.tailwindcss.com"></script>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+ <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+ <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+ <style>
+ @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+ body { font-family: 'Plus Jakarta Sans', sans-serif; }
+ </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col overflow-x-hidden">
+
+ <!-- HEADER UNIQUE -->
+ <header class="py-4 px-4 border-b border-slate-800/80 bg-slate-900/40 backdrop-blur">
+ <div class="flex justify-between items-center max-w-5xl mx-auto w-full">
+ <h1 class="text-2xl font-extrabold tracking-tight text-white">IA & Vous</h1>
+ <div id="role-badge" class="text-xs px-3 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-full font-medium">
+ Mode Public / Connecté
+ </div>
+ </div>
+ </header>
+
+ <!-- CONTAINER PRINCIPAL -->
+ <main class="flex-grow max-w-5xl w-full mx-auto px-4 py-6 flex flex-col items-center justify-center space-y-8">
+
+ <!-- ÉTAT A : EN ATTENTE / QR CODE PLEINE PAGE -->
+ <div id="state-waiting" class="w-full flex flex-col items-center justify-center text-center py-6 space-y-6">
+ <!-- Vue Admin : Très gros QR code centré sur toute la page + 2 boutons -->
+ <div id="admin-waiting-box" class="hidden w-full flex flex-col items-center justify-center space-y-6">
+ <div class="space-y-1">
+ <span class="text-xs uppercase tracking-widest text-amber-400 font-bold">Connexion en direct</span>
+ <h2 class="text-2xl md:text-3xl font-extrabold text-white">Scannez pour rejoindre l'expérience interactive</h2>
+ </div>
+
+ <!-- Conteneur QR Code très grand (adapte sa taille à l'écran) -->
+ <div class="bg-white p-4 sm:p-6 rounded-3xl shadow-[0_0_50px_rgba(251,191,36,0.25)] border-4 border-amber-400 flex items-center justify-center">
+ <img id="qr-img-static" src="qr-ia&vous.png" alt="QR Code IA & Vous" class="w-[62vmin] h-[62vmin] max-w-[440px] max-h-[440px] min-w-[240px] min-h-[240px] object-contain" onerror="fallbackToDynamicQR()">
+ <div id="qr-dynamic-fallback" class="hidden"></div>
+ </div>
+
+ <p id="public-url-display" class="text-sm text-amber-400 font-mono bg-slate-900/90 px-4 py-1.5 rounded-full border border-slate-800"></p>
+
+ <!-- 2 boutons de contrôle Admin -->
+ <div class="flex flex-wrap items-center justify-center gap-4 pt-2">
+ <button onclick="triggerStartVideo()" class="px-7 py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-xl shadow-lg transition-all text-base flex items-center gap-2 cursor-pointer">
+ <span>▶</span> Lancer la vidéo
+ </button>
+ <button onclick="onVideoEnded()" class="px-7 py-3.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl border border-slate-700 transition-all text-base cursor-pointer">
+ Passer la vidéo ⏭
+ </button>
+ </div>
+ </div>
+
+ <!-- Vue Public : Écran d'attente sur smartphone -->
+ <div id="public-waiting-box" class="w-full text-center py-16 space-y-6">
+ <div class="inline-block p-4 bg-amber-500/10 rounded-full text-amber-400 animate-pulse text-4xl mb-2">⚡</div>
+ <h2 class="text-3xl font-bold text-white">Vous êtes connecté !</h2>
+ <p class="text-slate-400 max-w-md mx-auto text-sm">
+ La présentation va démarrer sur l'écran principal. Gardez cette page ouverte pour voter et tester les assistants en direct.
+ </p>
+ </div>
+ </div>
+
+ <!-- ÉTAT B : DIFFUSION VIDÉO -->
+ <div id="state-video" class="w-full hidden">
+ <!-- Vue Admin : Plein écran de la page (100vw x 100vh) -->
+ <div id="admin-video-box" class="hidden fixed inset-0 z-50 w-screen h-screen bg-black flex flex-col justify-between">
+ <div onclick="toggleVideoFromScreen(event)" class="relative flex-grow w-full h-full flex items-center justify-center bg-black overflow-hidden cursor-pointer group">
+ <video id="intro-video" class="w-full h-full object-contain" preload="auto" controls playsinline>
+ <source src="Comment l'IA Devient Votre Meilleur Assistant de Travail.mp4" type="video/mp4">
+ <source src="video_1.mp4" type="video/mp4">
+ Votre navigateur ne supporte pas la lecture de vidéos.
+ </video>
+ <!-- Bouton central type YouTube quand la vidéo est en pause -->
+ <button id="center-play-btn" type="button" onclick="launchVideoPlayback(event)" aria-label="Lire la vidéo" class="w-20 h-20 rounded-full bg-amber-500/90 hover:bg-amber-400 text-slate-950 flex items-center justify-center shadow-[0_0_30px_rgba(251,191,36,0.65)] transition-transform duration-200 group-hover:scale-105 text-3xl font-black pl-1">
+ ▶
+ </button>
+ </div>
+
+ <!-- Barre de contrôle discrète en bas de l'écran -->
+ <div class="bg-slate-950/90 border-t border-slate-800 px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+ <span id="video-feedback" class="text-xs text-amber-400 font-medium">Vidéo prête — cliquez sur l'écran pour lancer la lecture.</span>
+ <div class="flex items-center gap-3">
+ <button onclick="onVideoEnded()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition-all cursor-pointer">
+ Passer la vidéo & Afficher le Sondage
+ </button>
+ <button onclick="setState('waiting')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-lg cursor-pointer">
+ Retour QR Code
+ </button>
+ </div>
+ </div>
+ </div>
+
+ <!-- Vue Public : Écran sobre pendant la diffusion -->
+ <div id="public-video-box" class="w-full hidden text-center py-16 space-y-3">
+ <div class="text-3xl animate-bounce">▶</div>
+ <h3 class="text-xl font-bold text-white">Vidéo de présentation en cours sur l'écran principal...</h3>
+ <p class="text-xs text-slate-400">Le sondage apparaîtra ici automatiquement à la fin.</p>
+ </div>
+ </div>
+
+ <!-- ÉTAT C : SONDAGE & OUTILS -->
+ <div id="state-interactive" class="w-full hidden space-y-8">
+
+ <!-- BLOC SONDAGE EN DIRECT AVEC BARRES, CURSEUR ET POURCENTAGE -->
+ <div class="bg-slate-900 border border-amber-500/30 rounded-2xl p-6 shadow-xl space-y-6">
+ <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-800 pb-4">
+ <div class="space-y-1">
+ <span class="text-xs uppercase tracking-widest text-amber-400 font-bold">Interactivité BNI</span>
+ <h3 class="text-xl font-bold text-white">Que souhaitez-vous automatiser en priorité ?</h3>
+ <p class="text-xs text-slate-400">Cliquez sur une option pour voter — les barres et pourcentages se mettent à jour en direct.</p>
+ </div>
+ <div class="text-xs px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 self-start sm:self-center">
+ Total : <strong id="total-votes" class="text-amber-400">0 clic</strong>
+ </div>
+ </div>
+
+ <div class="space-y-4">
+ <!-- Option 1 -->
+ <div class="bg-slate-950/90 border border-slate-800 hover:border-amber-500/60 rounded-xl p-4 transition-all space-y-2.5">
+ <div class="flex items-center justify-between gap-3">
+ <button onclick="castVote(1)" class="flex items-center gap-2.5 text-left group cursor-pointer">
+ <span class="text-lg">📄</span>
+ <span class="font-bold text-sm text-white group-hover:text-amber-400 transition-colors">Reçus & Compta</span>
+ <span class="text-[11px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 group-hover:bg-amber-500 group-hover:text-slate-950 font-semibold transition-all">
+ Voter
+ </span>
+ </button>
+ <div class="flex items-baseline gap-2.5 shrink-0">
+ <span id="count-1" class="text-xs text-slate-400">0 clic</span>
+ <span id="pct-1" class="text-base font-extrabold text-amber-400 w-12 text-right">0%</span>
+ </div>
+ </div>
+ <div class="relative w-full h-3.5 bg-slate-800/90 rounded-full overflow-visible flex items-center">
+ <div id="bar-1" class="h-full bg-gradient-to-r from-amber-600 to-amber-400 rounded-full transition-all duration-500 ease-out relative flex items-center justify-end" style="width: 0%;">
+ <span id="cursor-1" class="w-4 h-4 rounded-full bg-white border-2 border-amber-500 shadow-[0_0_10px_rgba(251,191,36,0.9)] translate-x-1/2 transition-transform opacity-0"></span>
+ </div>
+ </div>
+ </div>
+
+ <!-- Option 2 -->
+ <div class="bg-slate-950/90 border border-slate-800 hover:border-amber-500/60 rounded-xl p-4 transition-all space-y-2.5">
+ <div class="flex items-center justify-between gap-3">
+ <button onclick="castVote(2)" class="flex items-center gap-2.5 text-left group cursor-pointer">
+ <span class="text-lg">🎙️</span>
+ <span class="font-bold text-sm text-white group-hover:text-amber-400 transition-colors">Devis & Chiffrage</span>
+ <span class="text-[11px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 group-hover:bg-amber-500 group-hover:text-slate-950 font-semibold transition-all">
+ Voter
+ </span>
+ </button>
+ <div class="flex items-baseline gap-2.5 shrink-0">
+ <span id="count-2" class="text-xs text-slate-400">0 clic</span>
+ <span id="pct-2" class="text-base font-extrabold text-amber-400 w-12 text-right">0%</span>
+ </div>
+ </div>
+ <div class="relative w-full h-3.5 bg-slate-800/90 rounded-full overflow-visible flex items-center">
+ <div id="bar-2" class="h-full bg-gradient-to-r from-amber-600 to-amber-400 rounded-full transition-all duration-500 ease-out relative flex items-center justify-end" style="width: 0%;">
+ <span id="cursor-2" class="w-4 h-4 rounded-full bg-white border-2 border-amber-500 shadow-[0_0_10px_rgba(251,191,36,0.9)] translate-x-1/2 transition-transform opacity-0"></span>
+ </div>
+ </div>
+ </div>
+
+ <!-- Option 3 -->
+ <div class="bg-slate-950/90 border border-slate-800 hover:border-amber-500/60 rounded-xl p-4 transition-all space-y-2.5">
+ <div class="flex items-center justify-between gap-3">
+ <button onclick="castVote(3)" class="flex items-center gap-2.5 text-left group cursor-pointer">
+ <span class="text-lg">✉️</span>
+ <span class="font-bold text-sm text-white group-hover:text-amber-400 transition-colors">Gestion des Emails</span>
+ <span class="text-[11px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 group-hover:bg-amber-500 group-hover:text-slate-950 font-semibold transition-all">
+ Voter
+ </span>
+ </button>
+ <div class="flex items-baseline gap-2.5 shrink-0">
+ <span id="count-3" class="text-xs text-slate-400">0 clic</span>
+ <span id="pct-3" class="text-base font-extrabold text-amber-400 w-12 text-right">0%</span>
+ </div>
+ </div>
+ <div class="relative w-full h-3.5 bg-slate-800/90 rounded-full overflow-visible flex items-center">
+ <div id="bar-3" class="h-full bg-gradient-to-r from-amber-600 to-amber-400 rounded-full transition-all duration-500 ease-out relative flex items-center justify-end" style="width: 0%;">
+ <span id="cursor-3" class="w-4 h-4 rounded-full bg-white border-2 border-amber-500 shadow-[0_0_10px_rgba(251,191,36,0.9)] translate-x-1/2 transition-transform opacity-0"></span>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <!-- SECTION ACCÈS AUX ASSISTANTS (SANS QR CODES, AVEC DEMANDE D'EMAIL) -->
+ <div class="w-full space-y-6 pt-4">
+ <div class="text-center">
+ <h2 class="text-2xl font-extrabold text-white">Testez les 3 Assistants</h2>
+ </div>
+
+ <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+ <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col items-center justify-between text-center space-y-4 shadow-lg">
+ <div class="space-y-2">
+ <div class="text-3xl">📄</div>
+ <h3 class="font-bold text-base text-white">Ticket & Compta</h3>
+ <p class="text-xs text-slate-400">Reçus horodatés & ligne comptable</p>
+ </div>
+ <button type="button" onclick="openAssistantModal('ticket', 'Assistant Ticket & Compta')" class="w-full py-2.5 px-4 bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-amber-400 text-xs font-bold rounded-xl transition-all cursor-pointer">
+ Ouvrir l'Assistant Ticket
+ </button>
+ </div>
+
+ <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col items-center justify-between text-center space-y-4 shadow-lg">
+ <div class="space-y-2">
+ <div class="text-3xl">🎙️</div>
+ <h3 class="font-bold text-base text-white">Devis Vocal</h3>
+ <p class="text-xs text-slate-400">Chiffrage terrain & fournisseurs</p>
+ </div>
+ <button type="button" onclick="openAssistantModal('devis', 'Assistant Devis Vocal')" class="w-full py-2.5 px-4 bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-amber-400 text-xs font-bold rounded-xl transition-all cursor-pointer">
+ Ouvrir l'Assistant Devis
+ </button>
+ </div>
+
+ <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col items-center justify-between text-center space-y-4 shadow-lg">
+ <div class="space-y-2">
+ <div class="text-3xl">✉️</div>
+ <h3 class="font-bold text-base text-white">Gestion Emails</h3>
+ <p class="text-xs text-slate-400">Filtrage & réponses automatiques</p>
+ </div>
+ <button type="button" onclick="openAssistantModal('email', 'Assistant Gestion Emails')" class="w-full py-2.5 px-4 bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-amber-400 text-xs font-bold rounded-xl transition-all cursor-pointer">
+ Ouvrir l'Assistant Email
+ </button>
+ </div>
+ </div>
+ </div>
+
+ <!-- PANNEAU ADMIN : GESTION DES DEMANDES D'ACCÈS AUX GEMS & SCRIPT DE PARTAGE -->
+ <div id="admin-gems-panel" class="hidden bg-slate-900 border border-amber-500/40 rounded-2xl p-6 shadow-xl space-y-6">
+ <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-800 pb-4">
+ <div>
+ <span class="text-xs uppercase tracking-widest text-amber-400 font-bold">Espace Présentateur</span>
+ <h3 class="text-lg font-bold text-white">Demandes d'accès aux Gems reçues en direct</h3>
+ <p class="text-xs text-slate-400">Copiez les emails et ouvrez directement le Gem pour les partager.</p>
+ </div>
+ <button type="button" onclick="clearGemRequests()" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-red-900/50 text-slate-300 hover:text-red-300 rounded-lg border border-slate-700 transition-colors cursor-pointer self-start">
+ Vider la liste
+ </button>
+ </div>
+
+ <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+ <!-- Carte Admin Ticket -->
+ <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-3">
+ <div class="space-y-2">
+ <div class="flex items-center justify-between">
+ <span class="font-bold text-sm text-white">📄 Ticket & Compta</span>
+ <span id="gem-count-ticket" class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-bold">0</span>
+ </div>
+ <textarea id="gem-emails-ticket" readonly rows="3" placeholder="Aucun email reçu..." class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 font-mono focus:outline-none"></textarea>
+ </div>
+ <div>
+ <button type="button" onclick="copyAndOpenGem('ticket', this)" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition-all cursor-pointer">
+ 📋 Copier & Ouvrir le Gem ↗
+ </button>
+ </div>
+ </div>
+
+ <!-- Carte Admin Devis -->
+ <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-3">
+ <div class="space-y-2">
+ <div class="flex items-center justify-between">
+ <span class="font-bold text-sm text-white">🎙️ Devis Vocal</span>
+ <span id="gem-count-devis" class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-bold">0</span>
+ </div>
+ <textarea id="gem-emails-devis" readonly rows="3" placeholder="Aucun email reçu..." class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 font-mono focus:outline-none"></textarea>
+ </div>
+ <div>
+ <button type="button" onclick="copyAndOpenGem('devis', this)" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition-all cursor-pointer">
+ 📋 Copier & Ouvrir le Gem ↗
+ </button>
+ </div>
+ </div>
+
+ <!-- Carte Admin Email -->
+ <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-3">
+ <div class="space-y-2">
+ <div class="flex items-center justify-between">
+ <span class="font-bold text-sm text-white">✉️ Gestion Emails</span>
+ <span id="gem-count-email" class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-bold">0</span>
+ </div>
+ <textarea id="gem-emails-email" readonly rows="3" placeholder="Aucun email reçu..." class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 font-mono focus:outline-none"></textarea>
+ </div>
+ <div>
+ <button type="button" onclick="copyAndOpenGem('email', this)" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition-all cursor-pointer">
+ 📋 Copier & Ouvrir le Gem ↗
+ </button>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <!-- Reset Admin -->
+ <div id="admin-reset-box" class="hidden text-center pt-2">
+ <button onclick="resetPresentation()" class="text-xs text-slate-500 hover:text-amber-400 underline cursor-pointer">
+ Réinitialiser la session (retour QR Code & votes)
+ </button>
+ </div>
+
+ </div>
+
+ </main>
+
+ <!-- MODALE DEMANDE D'EMAIL POUR ACCÈS AU GEM -->
+ <div id="email-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+ <div class="bg-slate-900 border border-amber-500/40 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 relative">
+ <button type="button" onclick="closeAssistantModal()" aria-label="Fermer" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg font-bold cursor-pointer">✕</button>
+
+ <!-- Formulaire de saisie -->
+ <div id="modal-form-view" class="space-y-4">
+ <div class="space-y-1">
+ <span class="text-xs uppercase tracking-widest text-amber-400 font-bold">Accès Privé Gemini</span>
+ <h3 id="modal-assistant-title" class="text-xl font-bold text-white">Ouvrir l'Assistant</h3>
+ <p class="text-xs text-slate-300 leading-relaxed">
+ Cet assistant est partagé de manière nominative. Indiquez votre adresse email (de préférence votre compte Google / Gmail) pour recevoir votre accès.
+ </p>
+ </div>
+
+ <form onsubmit="submitAssistantEmail(event)" class="space-y-4">
+ <div>
+ <label for="user-gem-email" class="block text-xs font-semibold text-slate-300 mb-1.5">Votre adresse email</label>
+ <input type="email" id="user-gem-email" required placeholder="exemple@gmail.com" class="w-full px-4 py-3 bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none">
+ </div>
+ <button type="submit" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-xl text-sm shadow-lg transition-all cursor-pointer">
+ Demander mon accès
+ </button>
+ </form>
+ </div>
+
+ <!-- Message après validation -->
+ <div id="modal-success-view" class="hidden text-center py-4 space-y-4">
+ <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-amber-500/20 text-amber-400 text-3xl">⏳</div>
+ <h4 class="text-lg font-bold text-white">Demande enregistrée !</h4>
+ <p class="text-sm text-slate-300 leading-relaxed">
+ Merci ! Dans un instant, vous allez recevoir par email un lien pour tester le Gem.
+ </p>
+ <div class="pt-2">
+ <button type="button" onclick="closeAssistantModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl border border-slate-700 transition-all cursor-pointer">
+ Fermer cette fenêtre
+ </button>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <!-- FOOTER -->
+ <footer class="py-6 text-center text-xs text-slate-500 border-t border-slate-800/80 mt-12">
+ IA & Vous • Formation & Automatisations • <a href="mailto:iaetvous83@gmail.com?subject=Contact%20BNI%20-%20IA%20%26%20Vous" class="hover:text-amber-400 transition-colors">Écrivez-nous</a>
+ </footer>
+
+ <script>
+ // Configuration Firebase Realtime Database (projet ia-et-vous-bni)
+ const firebaseConfig = {
+ apiKey: "AIzaSyDGRT3psZkoFeYUo6fRlKENDZq7ncFuSWU",
+ authDomain: "ia-et-vous-bni.firebaseapp.com",
+ databaseURL: "https://ia-et-vous-bni-default-rtdb.europe-west1.firebasedatabase.app",
+ projectId: "ia-et-vous-bni",
+ storageBucket: "ia-et-vous-bni.firebasestorage.app",
+ messagingSenderId: "630035486246",
+ appId: "1:630035486246:web:2e13d84ee370f7dc5bf8e7"
+ };
+
+ const gemLinks = {
+ ticket: "https://gemini.google.com/gem/1CeD83XMwU9oRpK9Ih7UecwQclvqlDCGv?usp=sharing",
+ devis: "https://gemini.google.com/gem/1RnipBLJOO9wb6M1ZnQFbZulp82I2BO5i?usp=sharing",
+ email: "https://gemini.google.com/gem/1hfM9ZtXHgFUkSiArw7WohkvRmcWyXO48?usp=sharing"
+ };
+
+ const urlParams = new URLSearchParams(window.location.search);
+ const isAdmin = urlParams.has('admin');
+ const videoElement = document.getElementById('intro-video');
+ const centerPlayBtn = document.getElementById('center-play-btn');
+ const feedback = document.getElementById('video-feedback');
+
+ // URL publique propre (sans ?admin)
+ const publicUrl = window.location.origin + window.location.pathname;
+ const publicUrlDisplay = document.getElementById('public-url-display');
+ if (publicUrlDisplay) {
+ publicUrlDisplay.innerText = publicUrl;
+ }
+
+ // Secours si l'image qr-ia&vous.png n'est pas trouvée
+ function fallbackToDynamicQR() {
+ const img = document.getElementById('qr-img-static');
+ const container = document.getElementById('qr-dynamic-fallback');
+ if (img) img.classList.add('hidden');
+ if (container) {
+ container.classList.remove('hidden');
+ container.innerHTML = "";
+ new QRCode(container, { text: publicUrl, width: 320, height: 320 });
+ }
+ }
+
+ if (isAdmin) {
+ document.getElementById('role-badge').innerText = "Mode Présentateur (Admin)";
+ document.getElementById('admin-waiting-box').classList.remove('hidden');
+ document.getElementById('public-waiting-box').classList.add('hidden');
+ document.getElementById('admin-video-box').classList.remove('hidden');
+ document.getElementById('admin-gems-panel').classList.remove('hidden');
+ document.getElementById('admin-reset-box').classList.remove('hidden');
+ videoElement.load();
+ } else {
+ document.getElementById('public-video-box').classList.remove('hidden');
+ }
+
+ let currentState = 'waiting';
+ let votesData = { 1: 0, 2: 0, 3: 0 };
+ let gemRequestsData = { ticket: {}, devis: {}, email: {} };
+ let dbRefState = null;
+ let dbRefVotes = null;
+ let dbRefGemRequests = null;
+
+ const hasFirebaseConfig = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith("VOTRE_");
+
+ if (hasFirebaseConfig) {
+ firebase.initializeApp(firebaseConfig);
+ const db = firebase.database();
+ dbRefState = db.ref('bni/state');
+ dbRefVotes = db.ref('bni/votes');
+ dbRefGemRequests = db.ref('bni/gem_requests');
+
+ dbRefState.on('value', (snap) => {
+ const val = snap.val();
+ if (val) {
+ currentState = val;
+ updateUIState(val, false);
+ }
+ });
+
+ dbRefVotes.on('value', (snap) => {
+ const val = snap.val();
+ if (val) {
+ votesData = { 1: Number(val[1]) || 0, 2: Number(val[2]) || 0, 3: Number(val[3]) || 0 };
+ updateVotesDisplay();
+ }
+ });
+
+ dbRefGemRequests.on('value', (snap) => {
+ gemRequestsData = snap.val() || { ticket: {}, devis: {}, email: {} };
+ if (isAdmin) updateAdminGemDisplay();
+ });
+ } else {
+ currentState = localStorage.getItem('bni_state') || 'waiting';
+ votesData = JSON.parse(localStorage.getItem('bni_votes')) || { 1: 0, 2: 0, 3: 0 };
+ gemRequestsData = JSON.parse(localStorage.getItem('bni_gem_requests')) || { ticket: {}, devis: {}, email: {} };
+ updateUIState(currentState, false);
+ updateVotesDisplay();
+ if (isAdmin) updateAdminGemDisplay();
+
+ window.addEventListener('storage', (event) => {
+ if (event.key === 'bni_state') updateUIState(event.newValue, false);
+ if (event.key === 'bni_votes') {
+ votesData = JSON.parse(event.newValue);
+ updateVotesDisplay();
+ }
+ if (event.key === 'bni_gem_requests' && isAdmin) {
+ gemRequestsData = JSON.parse(event.newValue) || { ticket: {}, devis: {}, email: {} };
+ updateAdminGemDisplay();
+ }
+ });
+ }
+
+ // --- GESTION MODALE EMAIL POUR LES GEMS ---
+ let selectedGemKey = null;
+
+ function openAssistantModal(gemKey, gemTitle) {
+ selectedGemKey = gemKey;
+ document.getElementById('modal-assistant-title').innerText = gemTitle;
+ document.getElementById('modal-form-view').classList.remove('hidden');
+ document.getElementById('modal-success-view').classList.add('hidden');
+
+ // Pré-remplir si l'utilisateur a déjà saisi son email
+ const savedEmail = localStorage.getItem('bni_user_email');
+ if (savedEmail) {
+ document.getElementById('user-gem-email').value = savedEmail;
+ }
+
+ document.getElementById('email-modal').classList.remove('hidden');
+ setTimeout(() => document.getElementById('user-gem-email').focus(), 50);
+ }
+
+ function closeAssistantModal() {
+ document.getElementById('email-modal').classList.add('hidden');
+ }
+
+ function submitAssistantEmail(event) {
+ event.preventDefault();
+ const emailInput = document.getElementById('user-gem-email');
+ const email = emailInput.value.trim().toLowerCase();
+ if (!email || !selectedGemKey) return;
+
+ localStorage.setItem('bni_user_email', email);
+
+ // Clé compatible Firebase (remplace . # $ [ ])
+ const safeKey = email.replace(/[.#$\[\]]/g, '_');
+
+ if (dbRefGemRequests) {
+ dbRefGemRequests.child(selectedGemKey).child(safeKey).set({
+ email: email,
+ timestamp: Date.now()
+ });
+ } else {
+ if (!gemRequestsData[selectedGemKey]) gemRequestsData[selectedGemKey] = {};
+ gemRequestsData[selectedGemKey][safeKey] = { email: email, timestamp: Date.now() };
+ localStorage.setItem('bni_gem_requests', JSON.stringify(gemRequestsData));
+ if (isAdmin) updateAdminGemDisplay();
+ }
+
+ document.getElementById('modal-form-view').classList.add('hidden');
+ document.getElementById('modal-success-view').classList.remove('hidden');
+ }
+
+ // --- GESTION ADMIN DES EMAILS & COPIE+OUVERTURE DU GEM ---
+ function getUniqueEmailsForGem(gemKey) {
+ const entries = (gemRequestsData && gemRequestsData[gemKey]) ? Object.values(gemRequestsData[gemKey]) : [];
+ const emails = entries.map(item => (typeof item === 'string' ? item : item.email)).filter(Boolean);
+ return [...new Set(emails)];
+ }
+
+ function updateAdminGemDisplay() {
+ ['ticket', 'devis', 'email'].forEach((key) => {
+ const list = getUniqueEmailsForGem(key);
+ const countEl = document.getElementById(`gem-count-${key}`);
+ const textEl = document.getElementById(`gem-emails-${key}`);
+ if (countEl) countEl.innerText = list.length;
+ if (textEl) textEl.value = list.join(', ');
+ });
+ }
+
+ function copyAndOpenGem(gemKey, btnEl) {
+ const list = getUniqueEmailsForGem(gemKey);
+ const textToCopy = list.length > 0 ? list.join(', ') : "";
+ 
+ const performOpen = () => {
+ const gemUrl = gemLinks[gemKey];
+ if (gemUrl) {
+ window.open(gemUrl, '_blank');
+ }
+ };
+
+ if (textToCopy) {
+ navigator.clipboard.writeText(textToCopy).then(() => {
+ const originalText = btnEl.innerText;
+ btnEl.innerText = `✅ ${list.length} email(s) copié(s) !`;
+ setTimeout(() => { btnEl.innerText = originalText; }, 2500);
+ performOpen();
+ }).catch(() => {
+ performOpen();
+ });
+ } else {
+ performOpen();
+ }
+ }
+
+ function clearGemRequests() {
+ if (!confirm("Effacer toutes les demandes d'emails enregistrées ?")) return;
+ gemRequestsData = { ticket: {}, devis: {}, email: {} };
+ if (dbRefGemRequests) {
+ dbRefGemRequests.set(gemRequestsData);
+ } else {
+ localStorage.setItem('bni_gem_requests', JSON.stringify(gemRequestsData));
+ }
+ updateAdminGemDisplay();
+ }
+
+ // --- GESTION VIDÉO & ÉTATS ---
+ function syncPlayButton() {
+ if (!centerPlayBtn) return;
+ if (videoElement.paused) {
+ centerPlayBtn.classList.remove('hidden');
+ } else {
+ centerPlayBtn.classList.add('hidden');
+ }
+ }
+
+ function launchVideoPlayback(event) {
+ if (event) event.stopPropagation();
+ if (currentState !== 'video') {
+ setState('video');
+ }
+ const playPromise = videoElement.play();
+ if (playPromise && typeof playPromise.catch === 'function') {
+ playPromise.catch(() => {
+ feedback.innerText = "Cliquez sur la vidéo pour lancer la lecture.";
+ });
+ }
+ }
+
+ function toggleVideoFromScreen(event) {
+ if (event.target === videoElement) {
+ return;
+ }
+ if (videoElement.paused) {
+ launchVideoPlayback(event);
+ } else {
+ videoElement.pause();
+ }
+ }
+
+ videoElement.addEventListener('play', () => {
+ feedback.innerText = "Lecture en cours...";
+ syncPlayButton();
+ });
+
+ videoElement.addEventListener('pause', () => {
+ if (currentState === 'video' && !videoElement.ended) {
+ feedback.innerText = "Vidéo en pause — cliquez sur l'écran pour reprendre.";
+ }
+ syncPlayButton();
+ });
+
+ videoElement.addEventListener('ended', () => {
+ syncPlayButton();
+ onVideoEnded();
+ });
+
+ function triggerStartVideo() {
+ setState('video');
+ if (videoElement.readyState === 0) {
+ videoElement.load();
+ }
+ feedback.innerText = "Vidéo prête en grand écran — cliquez sur l'écran pour lancer la lecture.";
+ syncPlayButton();
+ }
+
+ function onVideoEnded() {
+ if (!videoElement.paused) {
+ videoElement.pause();
+ }
+ setState('interactive');
+ }
+
+ function resetPresentation() {
+ setState('waiting');
+ videoElement.pause();
+ videoElement.currentTime = 0;
+ syncPlayButton();
+ const resetVotes = { 1: 0, 2: 0, 3: 0 };
+ votesData = resetVotes;
+ updateVotesDisplay();
+ if (dbRefVotes) {
+ dbRefVotes.set(resetVotes);
+ } else {
+ localStorage.setItem('bni_votes', JSON.stringify(resetVotes));
+ }
+ }
+
+ function setState(newState) {
+ currentState = newState;
+ if (dbRefState) {
+ dbRefState.set(newState);
+ } else {
+ localStorage.setItem('bni_state', newState);
+ }
+ updateUIState(newState, true);
+ }
+
+ function updateUIState(state, fromLocalAction) {
+ document.getElementById('state-waiting').classList.add('hidden');
+ document.getElementById('state-video').classList.add('hidden');
+ document.getElementById('state-interactive').classList.add('hidden');
+
+ if (state === 'waiting') {
+ document.getElementById('state-waiting').classList.remove('hidden');
+ } else if (state === 'video') {
+ document.getElementById('state-video').classList.remove('hidden');
+ if (isAdmin) {
+ if (videoElement.readyState === 0) {
+ videoElement.load();
+ }
+ syncPlayButton();
+ }
+ } else if (state === 'interactive') {
+ document.getElementById('state-interactive').classList.remove('hidden');
+ }
+ }
+
+ // --- GESTION SONDAGE ---
+ function castVote(option) {
+ votesData[option] = (Number(votesData[option]) || 0) + 1;
+ updateVotesDisplay();
+ if (dbRefVotes) {
+ dbRefVotes.set(votesData);
+ } else {
+ localStorage.setItem('bni_votes', JSON.stringify(votesData));
+ }
+ }
+
+ function formatClicks(n) {
+ return n + (n > 1 ? " clics" : " clic");
+ }
+
+ function updateVotesDisplay() {
+ const c1 = Number(votesData[1]) || 0;
+ const c2 = Number(votesData[2]) || 0;
+ const c3 = Number(votesData[3]) || 0;
+ const total = c1 + c2 + c3;
+
+ document.getElementById('total-votes').innerText = formatClicks(total);
+
+ const items = [
+ { id: 1, count: c1 },
+ { id: 2, count: c2 },
+ { id: 3, count: c3 }
+ ];
+
+ items.forEach(({ id, count }) => {
+ const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+ document.getElementById(`count-${id}`).innerText = formatClicks(count);
+ document.getElementById(`pct-${id}`).innerText = pct + "%";
+ document.getElementById(`bar-${id}`).style.width = pct + "%";
+
+ const cursor = document.getElementById(`cursor-${id}`);
+ if (count > 0) {
+ cursor.classList.remove('opacity-0');
+ } else {
+ cursor.classList.add('opacity-0');
+ }
+ });
+ }
+ </script>
+</body>
+</html>
