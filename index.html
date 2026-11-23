@@ -231,13 +231,13 @@
  </div>
  </div>
 
- <!-- PANNEAU ADMIN : GESTION DES DEMANDES D'ACCÈS AUX GEMS & SCRIPT DE PARTAGE -->
+ <!-- PANNEAU ADMIN : GESTION DES DEMANDES D'ACCÈS AUX GEMS -->
  <div id="admin-gems-panel" class="hidden bg-slate-900 border border-amber-500/40 rounded-2xl p-6 shadow-xl space-y-6">
  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-800 pb-4">
  <div>
  <span class="text-xs uppercase tracking-widest text-amber-400 font-bold">Espace Présentateur</span>
  <h3 class="text-lg font-bold text-white">Demandes d'accès aux Gems reçues en direct</h3>
- <p class="text-xs text-slate-400">Copiez les emails et ouvrez directement le Gem pour les partager.</p>
+ <p class="text-xs text-slate-400">Cliquez pour copier les emails et ouvrir directement le Gem pour les partager.</p>
  </div>
  <button type="button" onclick="clearGemRequests()" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-red-900/50 text-slate-300 hover:text-red-300 rounded-lg border border-slate-700 transition-colors cursor-pointer self-start">
  Vider la liste
@@ -255,7 +255,7 @@
  <textarea id="gem-emails-ticket" readonly rows="3" placeholder="Aucun email reçu..." class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 font-mono focus:outline-none"></textarea>
  </div>
  <div>
- <button type="button" onclick="copyAndOpenGem('ticket', this)" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition-all cursor-pointer">
+ <button type="button" onclick="copyAndOpenGem('ticket', this)" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition-all cursor-pointer shadow-md flex items-center justify-center gap-1.5">
  📋 Copier & Ouvrir le Gem ↗
  </button>
  </div>
@@ -271,7 +271,7 @@
  <textarea id="gem-emails-devis" readonly rows="3" placeholder="Aucun email reçu..." class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 font-mono focus:outline-none"></textarea>
  </div>
  <div>
- <button type="button" onclick="copyAndOpenGem('devis', this)" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition-all cursor-pointer">
+ <button type="button" onclick="copyAndOpenGem('devis', this)" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition-all cursor-pointer shadow-md flex items-center justify-center gap-1.5">
  📋 Copier & Ouvrir le Gem ↗
  </button>
  </div>
@@ -287,7 +287,7 @@
  <textarea id="gem-emails-email" readonly rows="3" placeholder="Aucun email reçu..." class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 font-mono focus:outline-none"></textarea>
  </div>
  <div>
- <button type="button" onclick="copyAndOpenGem('email', this)" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition-all cursor-pointer">
+ <button type="button" onclick="copyAndOpenGem('email', this)" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition-all cursor-pointer shadow-md flex items-center justify-center gap-1.5">
  📋 Copier & Ouvrir le Gem ↗
  </button>
  </div>
@@ -515,7 +515,7 @@
  document.getElementById('modal-success-view').classList.remove('hidden');
  }
 
- // --- GESTION ADMIN DES EMAILS & COPIE+OUVERTURE DU GEM ---
+ // --- GESTION ADMIN DES EMAILS & COPIE+OUVERTURE ---
  function getUniqueEmailsForGem(gemKey) {
  const entries = (gemRequestsData && gemRequestsData[gemKey]) ? Object.values(gemRequestsData[gemKey]) : [];
  const emails = entries.map(item => (typeof item === 'string' ? item : item.email)).filter(Boolean);
@@ -535,7 +535,7 @@
  function copyAndOpenGem(gemKey, btnEl) {
  const list = getUniqueEmailsForGem(gemKey);
  const textToCopy = list.length > 0 ? list.join(', ') : "";
- 
+
  const performOpen = () => {
  const gemUrl = gemLinks[gemKey];
  if (gemUrl) {
